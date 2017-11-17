@@ -12,21 +12,25 @@ import (
 
 func main() {
 	var pages []*page
-	concurrent := flag.Bool("c", false, "specify to run in concurrent mode")
-	p := flag.Int("p", 10, "pool size when using concurrent mode")
-	f := flag.String("f", "", "file name to load list of url's from")
-	flag.Parse()
-
-	if len(flag.Args()) == 0 && *f == "" {
+	flag.Usage = func() {
 		fmt.Printf("%s [flags] url [url...]\n", os.Args[0])
 		fmt.Println("flags:")
 		flag.PrintDefaults()
+	}
+	concurrent := flag.Bool("c", false, "specify to run in concurrent mode")
+	poolSize := flag.Int("p", 10, "pool size when using concurrent mode")
+	fileForUrls := flag.String("f", "", "file name to load list of url's from")
+	slowestOnly := flag.Bool("s", false, "print only the slowest resource")
+	flag.Parse()
+
+	if len(flag.Args()) == 0 && *fileForUrls == "" {
+		flag.Usage()
 		os.Exit(1)
 	}
 
 	urls := flag.Args()
-	if *f != "" {
-		if fileUrls, err := urlsFromFile(*f); err == nil {
+	if *fileForUrls != "" {
+		if fileUrls, err := urlsFromFile(*fileForUrls); err == nil {
 			urls = append(urls, fileUrls...)
 		}
 	}
@@ -36,10 +40,10 @@ func main() {
 	if !*concurrent {
 		pages = resolveSynchronously(urls)
 	} else {
-		pages = resolveConcurrently(urls, *p)
+		pages = resolveConcurrently(urls, *poolSize)
 	}
 	endTime := time.Now()
-	printStats(pages, *concurrent)
+	printStats(pages, *concurrent, *slowestOnly)
 	log.Printf("Total time taken: %v", endTime.Sub(startTime))
 }
 
@@ -68,12 +72,12 @@ func addTotal(s, c *stat, concurrent bool) {
 	}
 }
 
-func printStats(pages []*page, concurrent bool) {
+func printStats(pages []*page, concurrent bool, slowest bool) {
 	tot := &stat{url: "Total"}
 	writeStatsHeader(os.Stdout)
 	fmt.Println()
 	for _, p := range pages {
-		s := p.stat(false)
+		s := p.stat(slowest)
 		addTotal(tot, s, concurrent)
 		s.write(os.Stdout)
 		fmt.Println()
