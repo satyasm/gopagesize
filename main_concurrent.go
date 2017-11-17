@@ -29,12 +29,18 @@ func resolveInGoRoutine(urls []string) []*page {
 }
 
 func resolveConcurrently(urls []string, nPoolSize int) []*page {
-	pages := []*page{}
 	reqChan := make(chan *request)
+
+	// create pool of workers
 	for i := 0; i < nPoolSize; i++ {
 		go worker(reqChan)
 	}
 
+	return doConcurrently(reqChan, urls)
+}
+
+func doConcurrently(reqChan chan<- *request, urls []string) []*page {
+	pages := []*page{}
 	pagesChan := make(chan *page)
 	numPages := 0
 	for _, url := range urls {
@@ -52,4 +58,28 @@ func resolveConcurrently(urls []string, nPoolSize int) []*page {
 		}
 	}
 	return pages
+}
+
+func routeByHost(reqChan <-chan *request, nPoolSize int) {
+	byHost := map[string]chan *request{}
+
+	for {
+		if r, ok := <-reqChan; ok {
+			host := r.res.host()
+			if _, found := byHost[host]; !found {
+				c := make(chan *request)
+				byHost[host] = c
+				for i := 0; i < nPoolSize; i++ {
+					go worker(c)
+				}
+			}
+			byHost[host] <- r
+		}
+	}
+}
+
+func resolveConcurrentlyByHost(urls []string, nPoolSize int) []*page {
+	reqChan := make(chan *request)
+	go routeByHost(reqChan, nPoolSize)
+	return doConcurrently(reqChan, urls)
 }

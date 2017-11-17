@@ -22,6 +22,7 @@ func main() {
 	fileForUrls := flag.String("f", "", "file name to load list of url's from")
 	slowestOnly := flag.Bool("s", false, "print only the slowest resource")
 	resourceParallel := flag.Bool("r", false, "do resource level concurrency")
+	hostParallel := flag.Bool("H", false, "host level concurrency")
 	flag.Parse()
 
 	if len(flag.Args()) == 0 && *fileForUrls == "" {
@@ -42,7 +43,11 @@ func main() {
 		pages = resolveSynchronously(urls)
 	} else {
 		if *resourceParallel {
-			pages = resolveConcurrently(urls, *poolSize)
+			if *hostParallel {
+				pages = resolveConcurrentlyByHost(urls, *poolSize)
+			} else {
+				pages = resolveConcurrently(urls, *poolSize)
+			}
 		} else {
 			pages = resolveInGoRoutine(urls)
 		}

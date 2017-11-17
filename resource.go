@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"net/url"
 	"strings"
 	"time"
 
@@ -107,4 +108,11 @@ func (r *resource) get() ([]byte, error) {
 
 func (r *resource) String() string {
 	return fmt.Sprintf("(%v|%v|%v|%v)", r.resType, r.url, r.size, r.err)
+}
+
+func (r *resource) host() (host string) {
+	if url, err := url.Parse(r.url); err == nil {
+		host = url.Host
+	}
+	return
 }
