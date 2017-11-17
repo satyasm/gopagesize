@@ -21,8 +21,8 @@ func main() {
 	poolSize := flag.Int("p", 10, "pool size when using concurrent mode")
 	fileForUrls := flag.String("f", "", "file name to load list of url's from")
 	slowestOnly := flag.Bool("s", false, "print only the slowest resource")
-	resourceParallel := flag.Bool("r", false, "do resource level concurrency")
-	hostParallel := flag.Bool("H", false, "host level concurrency")
+	resourceConcurrency := flag.Bool("r", false, "do resource level concurrency")
+	hostConcurrency := flag.Bool("H", false, "host level concurrency")
 	trace := flag.Bool("t", false, "trace network connections")
 	flag.Parse()
 
@@ -44,19 +44,7 @@ func main() {
 	}
 
 	startTime := time.Now()
-	if !*concurrent {
-		pages = resolveSynchronously(urls)
-	} else {
-		if *resourceParallel {
-			if *hostParallel {
-				pages = resolveConcurrentlyByHost(urls, *poolSize)
-			} else {
-				pages = resolveConcurrently(urls, *poolSize)
-			}
-		} else {
-			pages = resolveInGoRoutine(urls)
-		}
-	}
+	pages = resolveUrls(urls, *poolSize, *concurrent, *resourceConcurrency, *hostConcurrency)
 	endTime := time.Now()
 	printStats(pages, *concurrent, *slowestOnly)
 
@@ -66,6 +54,19 @@ func main() {
 		fmt.Println()
 	}
 	log.Printf("Total time taken: %v", endTime.Sub(startTime))
+}
+
+func resolveUrls(urls []string, poolSize int, concurrent, resourceConcurrency, hostConcurrency bool) []*page {
+	if concurrent {
+		if resourceConcurrency {
+			if hostConcurrency {
+				return resolveConcurrentlyByHost(urls, poolSize)
+			}
+			return resolveConcurrently(urls, poolSize)
+		}
+		return resolveInGoRoutine(urls)
+	}
+	return resolveSynchronously(urls)
 }
 
 func urlsFromFile(fname string) ([]string, error) {
