@@ -10,6 +10,7 @@ import (
 )
 
 func main() {
+	var pages []*page
 	concurrent := flag.Bool("c", false, "specify to run in concurrent mode")
 	p := flag.Int("p", 10, "pool size when using concurrent mode")
 	f := flag.String("f", "", "file name to load list of url's from")
@@ -29,14 +30,18 @@ func main() {
 		}
 	}
 
-	start := time.Now()
+	startTime := time.Now()
 	if !*concurrent {
-		resolveSynchronously(urls)
+		pages = resolveSynchronously(urls)
 	} else {
-		resolveConcurrently(urls, *p)
+		pages = resolveConcurrently(urls, *p)
 	}
+	endTime := time.Now()
 
-	log.Printf("Total time taken: %v", time.Since(start))
+	for _, p := range pages {
+		fmt.Printf("%-40s, %4d, %10d, %v\n", p.url, p.numResources(), p.total, p.timeTaken)
+	}
+	log.Printf("Total time taken: %v", endTime.Sub(startTime))
 }
 
 func urlsFromFile(fname string) ([]string, error) {
@@ -52,7 +57,8 @@ func urlsFromFile(fname string) ([]string, error) {
 	return urls, nil
 }
 
-func resolveSynchronously(urls []string) {
+func resolveSynchronously(urls []string) []*page {
+	pages := []*page{}
 	for _, url := range urls {
 		p, err := newPage(url)
 		if err != nil {
@@ -61,13 +67,14 @@ func resolveSynchronously(urls []string) {
 		}
 		if err := p.resolve(); err != nil {
 			log.Printf("Error resolving page: %v", err)
-			continue
 		}
-		fmt.Println(p)
+		pages = append(pages, p)
 	}
+	return pages
 }
 
-func resolveConcurrently(urls []string, nPoolSize int) {
+func resolveConcurrently(urls []string, nPoolSize int) []*page {
+	pages := []*page{}
 	reqChan := make(chan *request)
 	for i := 0; i < nPoolSize; i++ {
 		go worker(reqChan)
@@ -86,7 +93,8 @@ func resolveConcurrently(urls []string, nPoolSize int) {
 	}
 	for i := 0; i < numPages; i++ {
 		if p, ok := <-pagesChan; ok {
-			fmt.Println(p)
+			pages = append(pages, p)
 		}
 	}
+	return pages
 }

@@ -1,6 +1,11 @@
 package main
 
+import (
+	"time"
+)
+
 func (p *page) resolveConcurrently(reqChan chan<- *request, pagesChan chan<- *page) {
+	startTime := time.Now()
 	pageRespChan := make(chan *result)
 	reqChan <- &request{res: p.base, resp: pageRespChan}
 	resp := <-pageRespChan
@@ -18,6 +23,7 @@ func (p *page) resolveConcurrently(reqChan chan<- *request, pagesChan chan<- *pa
 	p.total += p.base.size
 
 	p.resolveResourcesConcurrently(reqChan)
+	p.timeTaken = time.Since(startTime)
 	pagesChan <- p
 }
 

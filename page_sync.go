@@ -1,6 +1,11 @@
 package main
 
+import (
+	"time"
+)
+
 func (p *page) resolve() error {
+	startTime := time.Now()
 	body, err := p.base.get()
 	if err != nil {
 		return err
@@ -9,7 +14,9 @@ func (p *page) resolve() error {
 	if err := p.parseResources(body); err != nil {
 		return err
 	}
-	return p.resolveResources()
+	err = p.resolveResources()
+	p.timeTaken = time.Since(startTime)
+	return err
 }
 
 func (p *page) resolveResources() error {

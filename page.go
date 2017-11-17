@@ -4,14 +4,16 @@ import (
 	"bytes"
 	"fmt"
 	"net/url"
+	"time"
 )
 
 type page struct {
-	url    *url.URL
-	base   *resource
-	assets map[resourceType]map[string]*resource
-	total  int
-	err    error
+	url       *url.URL
+	base      *resource
+	assets    map[resourceType]map[string]*resource
+	total     int
+	timeTaken time.Duration
+	err       error
 }
 
 func newPage(rawURL string) (*page, error) {
