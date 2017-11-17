@@ -98,3 +98,7 @@ func (r *resource) get() ([]byte, error) {
 	r.size = len(body)
 	return body, nil
 }
+
+func (r *resource) String() string {
+	return fmt.Sprintf("(%v|%v|%v|%v)", r.resType, r.url, r.size, r.err)
+}
