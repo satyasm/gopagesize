@@ -39,7 +39,7 @@ func main() {
 		pages = resolveConcurrently(urls, *p)
 	}
 	endTime := time.Now()
-	printStats(pages)
+	printStats(pages, *concurrent)
 	log.Printf("Total time taken: %v", endTime.Sub(startTime))
 }
 
@@ -56,22 +56,27 @@ func urlsFromFile(fname string) ([]string, error) {
 	return urls, nil
 }
 
-func stringMaxLen(length int, s string) string {
-	if len(s) < length {
-		return s
+func addTotal(s, c *stat, concurrent bool) {
+	s.numRequests += c.numRequests
+	s.size += c.size
+	if concurrent {
+		if s.timeTaken < c.timeTaken {
+			s.timeTaken = c.timeTaken
+		}
+	} else {
+		s.timeTaken += c.timeTaken
 	}
-	return s[:length-3] + "..."
 }
 
-func printStats(pages []*page) {
-	fmt.Printf("%-40s, %6s, %13s, %s\n", "URL", "# res", "size (bytes)", "time taken")
+func printStats(pages []*page, concurrent bool) {
+	tot := &stat{url: "Total"}
+	writeStatsHeader(os.Stdout)
 	fmt.Println()
 	for _, p := range pages {
-		fmt.Printf("%-40s, %6d, %13d, %v\n", p.url, p.numResources(), p.total, p.timeTaken.Round(time.Millisecond))
-		fmt.Printf("  %-38s, %6d, %13d, %v\n", "page", 1, p.base.size, p.base.timeTaken.Round(time.Millisecond))
-		fmt.Printf("  %-38s, %6d, %13d, %v\n", "parse", 1, 0, p.parseTime.Round(time.Millisecond))
-		r := p.slowest()
-		fmt.Printf("  %-38s, %6d, %13d, %v\n", stringMaxLen(38, r.url), 1, r.size, r.timeTaken.Round(time.Millisecond))
+		s := p.stat(false)
+		addTotal(tot, s, concurrent)
+		s.write(os.Stdout)
 		fmt.Println()
 	}
+	tot.write(os.Stdout)
 }
