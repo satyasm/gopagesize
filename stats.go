@@ -33,6 +33,9 @@ func stringMaxLen(length int, s string) string {
 	}
 	prefix := length/2 - 2
 	suffix := length/2 - 1
+	if length%2 == 1 {
+		prefix++ // if we have odd length, we can include an extra char in prefix
+	}
 	return s[:prefix] + "..." + s[len(s)-suffix:]
 }
 
