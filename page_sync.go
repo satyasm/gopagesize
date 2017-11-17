@@ -6,6 +6,9 @@ import (
 
 func (p *page) resolve() error {
 	startTime := time.Now()
+	defer func() {
+		p.timeTaken = time.Since(startTime)
+	}()
 	body, err := p.base.get()
 	if err != nil {
 		return err
@@ -14,9 +17,7 @@ func (p *page) resolve() error {
 	if err := p.parseResources(body); err != nil {
 		return err
 	}
-	err = p.resolveResources()
-	p.timeTaken = time.Since(startTime)
-	return err
+	return p.resolveResources()
 }
 
 func (p *page) resolveResources() error {

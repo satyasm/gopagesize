@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"strings"
+	"time"
 
 	"golang.org/x/net/html"
 	"golang.org/x/net/html/atom"
@@ -22,10 +23,11 @@ const (
 )
 
 type resource struct {
-	resType resourceType
-	url     string
-	size    int
-	err     error
+	resType   resourceType
+	url       string
+	size      int
+	err       error
+	timeTaken time.Duration
 }
 
 func (rt resourceType) String() string {
@@ -82,6 +84,10 @@ func parseResources(scheme, host string, node *html.Node) []*resource {
 }
 
 func (r *resource) get() ([]byte, error) {
+	startTime := time.Now()
+	defer func() {
+		r.timeTaken = time.Since(startTime)
+	}()
 	resp, err := http.Get(r.url)
 	if err != nil {
 		r.err = err

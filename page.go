@@ -13,6 +13,7 @@ type page struct {
 	assets    map[resourceType]map[string]*resource
 	total     int
 	timeTaken time.Duration
+	parseTime time.Duration
 	err       error
 }
 
@@ -36,6 +37,10 @@ func (p *page) numResources() (nResources int) {
 }
 
 func (p *page) parseResources(body []byte) error {
+	startTime := time.Now()
+	defer func() {
+		p.parseTime = time.Since(startTime)
+	}()
 	resources, err := extractResources(p.url.Scheme, p.url.Host, body)
 	if err != nil {
 		return err
@@ -61,4 +66,17 @@ func (p *page) String() string {
 	}
 	fmt.Fprintf(&buff, "%s|Total = %d bytes\n", p.url, p.total)
 	return buff.String()
+}
+
+func (p *page) slowest() (res *resource) {
+	var maxTime time.Duration
+	for _, a := range p.assets {
+		for _, r := range a {
+			if r.timeTaken > maxTime {
+				maxTime = r.timeTaken
+				res = r
+			}
+		}
+	}
+	return
 }
