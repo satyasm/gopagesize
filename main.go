@@ -38,8 +38,9 @@ func main() {
 	}
 	endTime := time.Now()
 
+	fmt.Printf("%-40s, %6s, %13s, %s\n", "URL", "# res", "size (bytes)", "time taken")
 	for _, p := range pages {
-		fmt.Printf("%-40s, %4d, %10d, %v\n", p.url, p.numResources(), p.total, p.timeTaken)
+		fmt.Printf("%-40s, %6d, %13d, %v\n", p.url, p.numResources(), p.total, p.timeTaken)
 	}
 	log.Printf("Total time taken: %v", endTime.Sub(startTime))
 }
@@ -55,46 +56,4 @@ func urlsFromFile(fname string) ([]string, error) {
 		urls = append(urls, scanner.Text())
 	}
 	return urls, nil
-}
-
-func resolveSynchronously(urls []string) []*page {
-	pages := []*page{}
-	for _, url := range urls {
-		p, err := newPage(url)
-		if err != nil {
-			log.Printf("Error constructing page: %v", err)
-			continue
-		}
-		if err := p.resolve(); err != nil {
-			log.Printf("Error resolving page: %v", err)
-		}
-		pages = append(pages, p)
-	}
-	return pages
-}
-
-func resolveConcurrently(urls []string, nPoolSize int) []*page {
-	pages := []*page{}
-	reqChan := make(chan *request)
-	for i := 0; i < nPoolSize; i++ {
-		go worker(reqChan)
-	}
-
-	pagesChan := make(chan *page)
-	numPages := 0
-	for _, url := range urls {
-		p, err := newPage(url)
-		if err != nil {
-			log.Printf("Error constructing page: %v", err)
-			continue
-		}
-		numPages++
-		go p.resolveConcurrently(reqChan, pagesChan)
-	}
-	for i := 0; i < numPages; i++ {
-		if p, ok := <-pagesChan; ok {
-			pages = append(pages, p)
-		}
-	}
-	return pages
 }
