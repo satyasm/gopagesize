@@ -67,9 +67,8 @@ func resolveSynchronously(urls []string) {
 	}
 }
 
-
 func resolveConcurrently(urls []string, nPoolSize int) {
-	reqChan := make(chan *request)
+	reqChan := make(chan *request, nPoolSize)
 	for i := 0; i < nPoolSize; i++ {
 		go worker(reqChan)
 	}
