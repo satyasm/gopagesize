@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"runtime"
 	"time"
 )
 
@@ -30,6 +31,7 @@ func main() {
 		}
 	}
 
+	log.Printf("Using %d CPUs", runtime.GOMAXPROCS(-1))
 	startTime := time.Now()
 	if !*concurrent {
 		pages = resolveSynchronously(urls)
