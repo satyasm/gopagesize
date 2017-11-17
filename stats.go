@@ -39,6 +39,7 @@ func stringMaxLen(length int, s string) string {
 func (s *stat) write(w io.Writer) {
 	if len(s.components) > 2 {
 		resources := s.components[2:] // by convention, first two are the main page and parse time
+		// put the slowest resource on top
 		sort.Slice(resources, func(i, j int) bool { return resources[i].timeTaken > resources[j].timeTaken })
 	}
 	fmt.Fprintf(w, mainFmt, stringMaxLen(urlLength, s.url), s.numRequests, s.size,
