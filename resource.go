@@ -3,8 +3,10 @@ package main
 import (
 	"bytes"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net/http"
+	"net/http/httptrace"
 	"net/url"
 	"strings"
 	"time"
@@ -84,12 +86,51 @@ func parseResources(scheme, host string, node *html.Node) []*resource {
 	return resources
 }
 
+var traceChan chan string
+var connByHost map[string]int
+
+func startTrace() {
+	traceChan = make(chan string)
+	connByHost = map[string]int{}
+	go func() {
+		for {
+			if h, ok := <-traceChan; ok {
+				connByHost[h] = connByHost[h] + 1
+			}
+		}
+	}()
+}
+
+func writeConnTrace(w io.Writer) {
+	fmt.Fprintf(w, "%-30s, %6s\n", "host", "# conn")
+	for h, n := range connByHost {
+		fmt.Fprintf(w, "%-30s, %6d\n", h, n)
+	}
+}
+
+func httpGet(url string) (*http.Response, error) {
+	req, _ := http.NewRequest("GET", url, nil)
+	if traceChan != nil {
+		host := ""
+		trace := &httptrace.ClientTrace{
+			DNSStart: func(d httptrace.DNSStartInfo) {
+				host = d.Host
+			},
+			ConnectDone: func(network, addr string, err error) {
+				traceChan <- host
+			},
+		}
+		req = req.WithContext(httptrace.WithClientTrace(req.Context(), trace))
+	}
+	return http.DefaultClient.Do(req)
+}
+
 func (r *resource) get() ([]byte, error) {
 	startTime := time.Now()
 	defer func() {
 		r.timeTaken = time.Since(startTime)
 	}()
-	resp, err := http.Get(r.url)
+	resp, err := httpGet(r.url)
 	if err != nil {
 		r.err = err
 		return nil, err

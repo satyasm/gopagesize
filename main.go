@@ -23,6 +23,7 @@ func main() {
 	slowestOnly := flag.Bool("s", false, "print only the slowest resource")
 	resourceParallel := flag.Bool("r", false, "do resource level concurrency")
 	hostParallel := flag.Bool("H", false, "host level concurrency")
+	trace := flag.Bool("t", false, "trace network connections")
 	flag.Parse()
 
 	if len(flag.Args()) == 0 && *fileForUrls == "" {
@@ -38,6 +39,10 @@ func main() {
 	}
 
 	log.Printf("Using %d CPUs", runtime.GOMAXPROCS(-1))
+	if *trace {
+		startTrace()
+	}
+
 	startTime := time.Now()
 	if !*concurrent {
 		pages = resolveSynchronously(urls)
@@ -54,6 +59,12 @@ func main() {
 	}
 	endTime := time.Now()
 	printStats(pages, *concurrent, *slowestOnly)
+
+	if *trace {
+		fmt.Println()
+		writeConnTrace(os.Stdout)
+		fmt.Println()
+	}
 	log.Printf("Total time taken: %v", endTime.Sub(startTime))
 }
 
