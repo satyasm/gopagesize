@@ -102,9 +102,9 @@ func startTrace() {
 }
 
 func writeConnTrace(w io.Writer) {
-	fmt.Fprintf(w, "%-30s, %6s\n", "host", "# conn")
+	fmt.Fprintf(w, "%-60s, %6s\n", "host", "# conn")
 	for h, n := range connByHost {
-		fmt.Fprintf(w, "%-30s, %6d\n", h, n)
+		fmt.Fprintf(w, "%-60s, %6d\n", h, n)
 	}
 }
 
@@ -117,7 +117,7 @@ func httpGet(url string) (*http.Response, error) {
 				host = d.Host
 			},
 			ConnectDone: func(network, addr string, err error) {
-				traceChan <- host
+				traceChan <- host + " <" + addr + ">"
 			},
 		}
 		req = req.WithContext(httptrace.WithClientTrace(req.Context(), trace))
