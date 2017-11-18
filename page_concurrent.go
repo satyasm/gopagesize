@@ -30,6 +30,17 @@ func (p *page) resolveConcurrently(reqChan chan<- *request, pagesChan chan<- *pa
 }
 
 func (p *page) resolveResourcesConcurrently(reqChan chan<- *request) {
+	// we create a buffered channel to receives the results from, with
+	// the buffer size set to the number of resources to fetch. This is
+	// important because the send reqChan is not assumed to be buffered,
+	// this is routine first queues all the requests before starting
+	// to read the response. Having the result channel buffered means
+	// that the worker threads on reqChan will also be able to send a
+	// result even if the reader is not ready, thus avoiding blocking
+	// the workers. Consider the degenerate case of having only one
+	// worker go routine receiving on reqChan. Without this buffer,
+	// the whole process could hang, with writes blocked on reqChan
+	// and the result chan.
 	nResources := p.numResources()
 	resourcesChan := make(chan *result, nResources)
 
