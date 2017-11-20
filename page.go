@@ -88,7 +88,8 @@ func (p *page) stat(onlySlowest bool) *stat {
 		size:        p.total,
 		timeTaken:   p.timeTaken,
 	}
-	s.addComponent(&stat{url: p.base.url, numRequests: 1, size: p.base.size, timeTaken: p.base.timeTaken})
+	s.addComponent(&stat{url: p.base.url, numRequests: 1, size: p.base.size, timeTaken: p.base.timeTaken,
+		err: p.base.err})
 	s.addComponent(&stat{url: "parse", numRequests: 0, size: 0, timeTaken: p.parseTime})
 	if onlySlowest {
 		slowest := p.slowest()
@@ -96,7 +97,8 @@ func (p *page) stat(onlySlowest bool) *stat {
 	} else {
 		for _, a := range p.assets {
 			for _, r := range a {
-				s.addComponent(&stat{url: r.url, numRequests: 1, size: r.size, timeTaken: r.timeTaken})
+				s.addComponent(&stat{url: r.url, numRequests: 1, size: r.size, timeTaken: r.timeTaken,
+					err: r.err})
 			}
 		}
 	}

@@ -21,6 +21,7 @@ type stat struct {
 	numRequests int
 	size        int
 	components  []*stat
+	err         error
 }
 
 func (s *stat) addComponent(c *stat) {
@@ -50,6 +51,9 @@ func (s *stat) write(w io.Writer) {
 	for _, c := range s.components {
 		fmt.Fprintf(w, compFmt, stringMaxLen(urlLength-4, c.url), c.numRequests, c.size,
 			c.timeTaken.Round(time.Millisecond))
+		if c.err != nil {
+			fmt.Fprintf(w, "      %v\n", c.err)
+		}
 	}
 }
 
